@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  webgl-water:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - ASSETS_PATH=/app/assets
+      - STATIC_PATH=/app/web/static
+      - GO_ENV=development
+    volumes:
+      - .:/app
+      - ../dudvmap.png:/app/assets/dudvmap.png
+      - ../normalmap.png:/app/assets/normalmap.png
+      - ../stone-texture.png:/app/assets/stone-texture.png
+    working_dir: /app
+    command: go run ./cmd/server -port 8080 -assets ./assets -static ./web/static
+    restart: unless-stopped
