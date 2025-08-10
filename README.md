@@ -2,7 +2,7 @@
 
 A modern implementation of a WebGL water simulation tutorial, ported from Rust/WASM to Go with a vanilla JavaScript frontend.
 
-![WebGL Water Simulation](screenshot.png)
+![WebGL Water Simulation]()
 
 ## Features
 
