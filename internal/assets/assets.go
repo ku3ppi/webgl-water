@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/webgl-water-go/webgl-water/internal/math3d"
+	"github.com/ku3ppi/webgl-water/internal/math3d"
 )
 
 // Assets manages all game assets (meshes, textures, etc.)

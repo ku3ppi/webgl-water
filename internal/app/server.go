@@ -11,8 +11,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/webgl-water-go/webgl-water/internal/assets"
-	"github.com/webgl-water-go/webgl-water/internal/state"
+	"github.com/ku3ppi/webgl-water/internal/assets"
+	"github.com/ku3ppi/webgl-water/internal/state"
 )
 
 // Server represents the main application server
