@@ -1,0 +1,313 @@
+@startuml Datenfluss und Nachrichten Code Map
+!theme plain
+
+title WebGL Water - Datenfluss und Nachrichten-Typen Code-Karte
+
+package "Go Message System" {
+
+  interface Message {
+    + message()
+  }
+
+  class AdvanceClockMessage {
+    + DeltaTime: float32
+    --
+    Aktualisiert die Anwendungsuhr
+    Wird alle 16ms gesendet (60fps)
+  }
+
+  class MouseDownMessage {
+    + X: int32
+    + Y: int32
+    --
+    Maus Taste gedrückt
+    Startet Kamera Drag Operation
+  }
+
+  class MouseUpMessage {
+    --
+    Maus Taste losgelassen
+    Beendet Kamera Drag Operation
+  }
+
+  class MouseMoveMessage {
+    + X: int32
+    + Y: int32
+    --
+    Maus Bewegung während Drag
+    Berechnet Kamera Rotation
+  }
+
+  class ZoomMessage {
+    + Delta: float32
+    --
+    Mausrad Zoom Event
+    Ändert Kamera Distanz
+  }
+
+  class SetReflectivityMessage {
+    + Value: float32
+    --
+    Range: 0.0 - 1.0
+    Standard: 0.6
+  }
+
+  class SetFresnelMessage {
+    + Value: float32
+    --
+    Range: 0.0 - 5.0
+    Standard: 2.0
+  }
+
+  class SetWaveSpeedMessage {
+    + Value: float32
+    --
+    Range: 0.0 - 0.1
+    Standard: 0.03
+  }
+
+  class UseReflectionMessage {
+    + Value: bool
+    --
+    Ein/Aus Reflektion Rendering
+  }
+
+  class UseRefractionMessage {
+    + Value: bool
+    --
+    Ein/Aus Refraktion Rendering
+  }
+
+  class ShowSceneryMessage {
+    + Value: bool
+    --
+    Ein/Aus Terrain Rendering
+  }
+
+}
+
+package "HTTP Request/Response" {
+
+  class WaterUpdateRequest {
+    + reflectivity: *float32 `json:"reflectivity,omitempty"`
+    + fresnelStrength: *float32 `json:"fresnelStrength,omitempty"`
+    + waveSpeed: *float32 `json:"waveSpeed,omitempty"`
+    + useReflection: *bool `json:"useReflection,omitempty"`
+    + useRefraction: *bool `json:"useRefraction,omitempty"`
+    --
+    POST /api/state/water
+    Pointer für optionale Felder
+  }
+
+  class CameraUpdateRequest {
+    + mouseDown: *{X, Y: int32} `json:"mouseDown,omitempty"`
+    + mouseUp: *bool `json:"mouseUp,omitempty"`
+    + mouseMove: *{X, Y: int32} `json:"mouseMove,omitempty"`
+    + zoom: *float32 `json:"zoom,omitempty"`
+    --
+    POST /api/state/camera
+    Unterstützt mehrere Input Types
+  }
+
+  class StateResponse {
+    + clock: float32 `json:"clock"`
+    + scenery: bool `json:"scenery"`
+    + camera: CameraState `json:"camera"`
+    + water: Water `json:"water"`
+    --
+    GET /api/state
+    Vollständiger Anwendungsstatus
+  }
+
+  class CameraState {
+    + position: [3]float32 `json:"position"`
+    + viewMatrix: []float32 `json:"viewMatrix"`
+    --
+    16 Elemente für 4x4 Matrix
+  }
+
+  class MeshResponse {
+    + meshes: []string `json:"meshes"`
+    --
+    GET /api/meshes
+    Liste aller verfügbaren Meshes
+  }
+
+  class MeshData {
+    + name: string `json:"name"`
+    + vertices: []float32 `json:"vertices"`
+    + normals: []float32 `json:"normals"`
+    + texCoords: []float32 `json:"texCoords"`
+    + indices: []uint16 `json:"indices"`
+    + vertexCount: int `json:"vertexCount"`
+    + triangleCount: int `json:"triangleCount"`
+    --
+    GET /api/meshes/{name}
+    Vollständige Mesh Geometrie
+  }
+
+}
+
+package "WebSocket Messages" {
+
+  class StateUpdateMessage {
+    + type: "state_update"
+    + clock: float32
+    + scenery: bool
+    + camera: CameraState
+    + water: Water
+    --
+    Real-time Updates (60fps)
+    Broadcast an alle Clients
+  }
+
+  class ConnectionMessage {
+    + type: "connection"
+    + clientId: string
+    + timestamp: number
+    --
+    Bei WebSocket Verbindung
+  }
+
+}
+
+package "JavaScript Datenstrukturen" {
+
+  class AppState {
+    + clock: number
+    + camera: CameraData
+    + water: WaterData
+    + scenery: boolean
+    --
+    Client-side State Mirror
+    --
+    CameraData:
+    - position: [number, number, number]
+    - viewMatrix: Float32Array
+    --
+    WaterData:
+    - reflectivity: number
+    - fresnelStrength: number
+    - waveSpeed: number
+    - useReflection: boolean
+    - useRefraction: boolean
+  }
+
+  class WebGLResources {
+    + programs: ProgramCollection
+    + textures: Map<string, WebGLTexture>
+    + meshes: Map<string, MeshBuffer>
+    + framebuffers: FramebufferCollection
+    --
+    GPU Ressourcen Cache
+    --
+    ProgramCollection:
+    - water: WebGLProgram
+    - mesh: WebGLProgram
+    - quad: WebGLProgram
+    --
+    FramebufferCollection:
+    - reflection: Framebuffer
+    - refraction: Framebuffer
+  }
+
+}
+
+package "Asset Loading Pipeline" {
+
+  class AssetLoader {
+    **Shader Loading:**
+    fetch(/shaders/{name}.glsl)
+    → compileShader()
+    → linkProgram()
+    → getUniformLocations()
+
+    **Texture Loading:**
+    fetch(/assets/{name}.png)
+    → createTexture()
+    → setTextureParameters()
+    → bindTexture()
+
+    **Mesh Loading:**
+    fetch(/api/meshes/{name})
+    → createBuffers()
+    → bindVertexData()
+    → setupVertexAttributes()
+  }
+
+}
+
+' Message Interface Implementierungen
+AdvanceClockMessage --|> Message
+MouseDownMessage --|> Message
+MouseUpMessage --|> Message
+MouseMoveMessage --|> Message
+ZoomMessage --|> Message
+SetReflectivityMessage --|> Message
+SetFresnelMessage --|> Message
+SetWaveSpeedMessage --|> Message
+UseReflectionMessage --|> Message
+UseRefractionMessage --|> Message
+ShowSceneryMessage --|> Message
+
+' HTTP zu Message Mapping
+WaterUpdateRequest --> SetReflectivityMessage : erzeugt
+WaterUpdateRequest --> SetFresnelMessage : erzeugt
+WaterUpdateRequest --> SetWaveSpeedMessage : erzeugt
+WaterUpdateRequest --> UseReflectionMessage : erzeugt
+WaterUpdateRequest --> UseRefractionMessage : erzeugt
+
+CameraUpdateRequest --> MouseDownMessage : erzeugt
+CameraUpdateRequest --> MouseUpMessage : erzeugt
+CameraUpdateRequest --> MouseMoveMessage : erzeugt
+CameraUpdateRequest --> ZoomMessage : erzeugt
+
+' WebSocket Flow
+StateResponse --> StateUpdateMessage : wird zu
+StateUpdateMessage --> AppState : aktualisiert
+
+' Asset Loading
+AssetLoader --> MeshData : lädt
+AssetLoader --> WebGLResources : füllt
+
+note top of Message
+**Message Processing:**
+1. HTTP Request empfangen
+2. Request zu Message konvertieren
+3. State.Update(message) aufrufen
+4. Über WebSocket broadcasten
+5. Frontend State aktualisieren
+end note
+
+note right of StateUpdateMessage
+**WebSocket Ticker:**
+time.NewTicker(16 * time.Millisecond)
+= 60 FPS State Updates
+Nur wenn Clients verbunden sind
+end note
+
+note bottom of AssetLoader
+**Shader Dateien:**
+- water-vertex.glsl
+- water-fragment.glsl
+- mesh-vertex.glsl
+- mesh-fragment.glsl
+- textured-quad-vertex.glsl
+- textured-quad-fragment.glsl
+
+**Texture Dateien:**
+- dudvmap.png (512x512 RGBA)
+- normalmap.png (512x512 RGBA)
+- stone-texture.png (512x512 RGBA)
+end note
+
+note left of AppState
+**UI Controls Mapping:**
+#reflectivity → water.reflectivity
+#fresnel → water.fresnelStrength
+#wave-speed → water.waveSpeed
+#use-reflection → water.useReflection
+#use-refraction → water.useRefraction
+end note
+
+@enduml

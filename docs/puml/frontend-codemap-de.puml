@@ -1,0 +1,183 @@
+@startuml JavaScript Frontend Code Map
+!theme plain
+
+title WebGL Water - JavaScript Frontend Code-Karte
+
+package "WebGL App Klasse" {
+
+  class WebGLWaterApp {
+    **DOM & WebGL:**
+    - canvas: HTMLCanvasElement
+    - gl: WebGLRenderingContext
+    - vaoExt: OES_vertex_array_object
+    - depthTextureExt: WEBGL_depth_texture
+
+    **Ressourcen:**
+    - shaders: object
+    - programs: object
+    - meshes: object
+    - textures: object
+    - framebuffers: object
+
+    **Status:**
+    - state: {
+      clock: number,
+      camera: {position, viewMatrix},
+      water: {reflectivity, fresnelStrength, waveSpeed},
+      scenery: boolean
+    }
+
+    **Konstanten:**
+    - CANVAS_WIDTH: 1200
+    - CANVAS_HEIGHT: 800
+    - REFLECTION_TEXTURE_WIDTH: 320
+    - REFLECTION_TEXTURE_HEIGHT: 180
+    - REFRACTION_TEXTURE_WIDTH: 1280
+    - REFRACTION_TEXTURE_HEIGHT: 720
+
+    **Initialisierung:**
+    + constructor()
+    + init(): Promise<void>
+    + setupCanvas()
+    + setupWebGL()
+    + loadShaders(): Promise<void>
+    + loadAssets(): Promise<void>
+    + setupFramebuffers()
+
+    **Rendering:**
+    + render()
+    + renderWater()
+    + renderMeshes()
+    + clearFramebuffers()
+  }
+
+}
+
+package "WebGL Komponenten" {
+
+  class ShaderProgram {
+    + program: WebGLProgram
+    + uniformLocations: object
+    + attribLocations: object
+    + createProgram(vs, fs): WebGLProgram
+    + compileShader(source, type): WebGLShader
+  }
+
+  class MeshBuffer {
+    + vertexBuffer: WebGLBuffer
+    + normalBuffer: WebGLBuffer
+    + texCoordBuffer: WebGLBuffer
+    + indexBuffer: WebGLBuffer
+    + indexCount: number
+    + createMeshBuffers(data): MeshBuffer
+  }
+
+  class Framebuffer {
+    + framebuffer: WebGLFramebuffer
+    + colorTexture: WebGLTexture
+    + depthTexture: WebGLTexture
+    + width: number
+    + height: number
+    + createFramebuffer(w, h): Framebuffer
+  }
+
+  class TextureManager {
+    - textures: Map<string, WebGLTexture>
+    + loadTexture(url): Promise<WebGLTexture>
+    + bindTexture(texture, unit)
+  }
+
+}
+
+package "Shader Konstanten" {
+
+  class WaterShaderUniforms {
+    **Matrizen:**
+    + perspective: mat4
+    + view: mat4
+    + model: mat4
+    + cameraPos: vec3
+
+    **Texturen:**
+    + refractionTexture: sampler2D
+    + reflectionTexture: sampler2D
+    + dudvTexture: sampler2D
+    + normalMap: sampler2D
+
+    **Animation:**
+    + dudvOffset: float
+    + waterReflectivity: float
+    + fresnelStrength: float
+  }
+
+  class ShaderKonstanten {
+    **Water Fragment:**
+    + waterDistortionStrength: 0.03
+    + shineDamper: 20.0
+    + tiling: 4.0
+
+    **Farben:**
+    + shallowWaterColor: vec4(0.0, 0.1, 0.3, 1.0)
+    + deepWaterColor: vec4(0.0, 0.1, 0.2, 1.0)
+    + sunlightColor: vec3(1.0, 1.0, 1.0)
+    + sunlightDir: vec3(-1.0, -1.0, 0.5)
+  }
+
+}
+
+package "Event Handling" {
+
+  class EventHandlers {
+    **Maus Events:**
+    - mousePressed: boolean
+    - lastMouseX: number
+    - lastMouseY: number
+
+    **Handler:**
+    + onMouseDown(event)
+    + onMouseUp(event)
+    + onMouseMove(event)
+    + onWheel(event)
+    + updateControlValues()
+
+    **Network:**
+    + sendCameraUpdate(data)
+    + sendWaterUpdate(data)
+  }
+
+  class WebSocketClient {
+    - ws: WebSocket
+    + connectWebSocket()
+    + handleMessage(event)
+    + sendMessage(data)
+  }
+
+}
+
+WebGLWaterApp --> ShaderProgram
+WebGLWaterApp --> MeshBuffer
+WebGLWaterApp --> Framebuffer
+WebGLWaterApp --> TextureManager
+WebGLWaterApp --> EventHandlers
+WebGLWaterApp --> WebSocketClient
+
+note right of WebGLWaterApp
+**Shader Dateien:**
+water-vertex.glsl
+water-fragment.glsl
+mesh-vertex.glsl
+mesh-fragment.glsl
+textured-quad-vertex.glsl
+textured-quad-fragment.glsl
+end note
+
+note bottom of EventHandlers
+**UI Controls:**
+#reflectivity - Range: 0-1, Step: 0.01
+#fresnel - Range: 0-5, Step: 0.1
+#wave-speed - Range: 0-0.1, Step: 0.001
+#use-reflection - Checkbox
+#use-refraction - Checkbox
+end note
+
+@enduml

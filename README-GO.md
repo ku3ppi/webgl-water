@@ -2,8 +2,6 @@
 
 A complete port of the [WebGL Water Tutorial](https://github.com/chinedufn/webgl-water-tutorial) from Rust/WASM to Go with JavaScript/WebGL frontend.
 
-![WebGL Water Demo](../screenshot.png)
-
 ## Overview
 
 This project demonstrates realistic water rendering using WebGL with reflections, refractions, and animated water waves. The original Rust/WASM implementation has been ported to a Go-based web server that serves a JavaScript WebGL frontend.
@@ -59,17 +57,17 @@ This project demonstrates realistic water rendering using WebGL with reflections
 1. **Clone the repository**:
    ```bash
    git clone <repository-url>
-   cd webgl-water/go-port
+   cd webgl-water
    ```
 
-2. **Setup development environment**:
+2. **Install dependencies**:
    ```bash
-   make setup
+   go mod download
    ```
 
 3. **Run the server**:
    ```bash
-   make run
+   go run ./cmd/server
    ```
 
 4. **Open your browser**:
@@ -79,7 +77,7 @@ This project demonstrates realistic water rendering using WebGL with reflections
 
 1. **Build and run with Docker Compose**:
    ```bash
-   docker-compose --profile dev up --build
+   docker-compose up --build
    ```
 
 2. **Open your browser**:
@@ -113,62 +111,44 @@ The Go server provides several REST API endpoints:
 - `GET /shaders/{name}` - Serve shader files
 - `WS /ws` - WebSocket endpoint for real-time updates
 
-## Build System
-
-The project uses a comprehensive Makefile for build automation:
+## Building
 
 ### Development
 
 ```bash
-# Setup development environment
-make setup
-
-# Run with hot reload
-make dev
-
-# Run tests
-make test
-
-# Format code
-make format
-
-# Run linter
-make lint
-```
-
-### Building
-
-```bash
 # Build for current platform
-make build
+go build -o server ./cmd/server
 
-# Build for all platforms
-make build-all
+# Run with custom options
+go run ./cmd/server -port 3000 -assets ./assets -static ./web/static
 
-# Clean build artifacts
-make clean
+# Environment variables
+PORT=3000 ASSETS_PATH=./assets STATIC_PATH=./web/static go run ./cmd/server
 ```
 
 ### Docker
 
 ```bash
 # Build Docker image
-make docker-build
+docker build -t webgl-water .
 
 # Run with Docker
-make docker-run
+docker run -p 8080:8080 webgl-water
 
 # Development environment
-make docker-dev
-
-# Production environment
-make docker-prod
+docker-compose up --build
 ```
 
 ## Project Structure
 
 ```
-go-port/
+webgl-water/
+├── docs/                    # 📚 Comprehensive documentation
+│   ├── puml/               # PlantUML source diagrams (EN + DE)
+│   ├── svg/                # SVG exports for web integration
+│   ├── pdf/                # PDF exports for presentations
+│   ├── txt/                # Text exports for searchability
+│   └── README.md           # Detailed technical documentation
 ├── cmd/server/              # Main server executable
 ├── internal/
 │   ├── app/                 # HTTP server and handlers
@@ -177,14 +157,12 @@ go-port/
 │   └── state/               # Application state management
 ├── web/
 │   ├── static/              # Static files (JS, CSS)
-│   ├── shaders/             # GLSL shader files
-│   └── templates/           # HTML templates
+│   └── shaders/             # GLSL shader files
 ├── assets/                  # Runtime assets (textures, meshes)
-├── build/                   # Build output
+├── *.png                   # Texture assets (dudvmap, normalmap, stone)
 ├── Dockerfile               # Production Docker image
 ├── Dockerfile.dev           # Development Docker image
 ├── docker-compose.yml       # Docker Compose configuration
-├── Makefile                 # Build automation
 └── README.md               # This file
 ```
 
@@ -235,8 +213,6 @@ export STATIC_PATH=./web/static
 ./server -port 8080 -assets ./assets -static ./web/static
 ```
 
-See `.env.example` for all available configuration options.
-
 ## Performance
 
 ### Optimization Features
@@ -246,16 +222,6 @@ See `.env.example` for all available configuration options.
 - **State Caching**: Minimal state changes in WebGL
 - **Asset Caching**: Browser caching for static assets
 
-### Benchmarking
-
-Run performance benchmarks:
-
-```bash
-make bench
-make profile-cpu
-make profile-mem
-```
-
 ## Development
 
 ### Adding New Features
@@ -264,14 +230,7 @@ make profile-mem
 2. **Frontend Changes**: Update JavaScript code in `web/static/`
 3. **Shaders**: Add/modify GLSL shaders in `web/shaders/`
 4. **Assets**: Add new assets to `assets/` directory
-
-### Hot Reload
-
-The development setup includes hot reload for Go code:
-
-```bash
-make dev  # Uses Air for automatic rebuilds
-```
+5. **Documentation**: Update relevant diagrams in `docs/puml/`
 
 For frontend changes, simply refresh the browser.
 
@@ -279,13 +238,10 @@ For frontend changes, simply refresh the browser.
 
 ```bash
 # Run all tests
-make test
+go test ./...
 
 # Run with coverage
-make test-bench
-
-# Security scan
-make security
+go test -cover ./...
 ```
 
 ## Deployment
@@ -294,20 +250,21 @@ make security
 
 ```bash
 # Build production image
-make docker-build
+docker build -t webgl-water .
 
 # Run production container
-docker run -p 8080:8080 webgl-water-go:latest
+docker run -p 8080:8080 webgl-water:latest
 ```
 
 ### Binary Distribution
 
 ```bash
-# Create release packages
-make release
-```
+# Build for Linux
+GOOS=linux GOARCH=amd64 go build -o server-linux ./cmd/server
 
-This creates platform-specific binaries in `build/release/`.
+# Build for Windows
+GOOS=windows GOARCH=amd64 go build -o server-windows.exe ./cmd/server
+```
 
 ## Troubleshooting
 
@@ -320,15 +277,18 @@ This creates platform-specific binaries in `build/release/`.
 
 ### Debug Mode
 
-Enable debug logging:
-
-```bash
-DEBUG=true ./server
-```
-
-### Browser Console
-
 Check the browser console for detailed error messages and performance metrics.
+
+## Documentation
+
+Comprehensive technical documentation is available in the `docs/` directory:
+
+- **Architecture Diagrams**: System overview, rendering pipeline, data flow, components
+- **Code Maps**: Detailed navigation through Go backend, JS frontend, shaders, and data structures
+- **Multiple Formats**: PlantUML sources, SVG exports, PDF versions, and text outputs
+- **English + German**: Complete documentation in both languages
+
+See [docs/README.md](docs/README.md) for the complete technical documentation.
 
 ## Comparison with Original
 
@@ -348,9 +308,10 @@ Check the browser console for detailed error messages and performance metrics.
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Run tests: `make test`
-5. Format code: `make format`
-6. Submit a pull request
+4. Update relevant documentation in `docs/` if needed
+5. Run tests: `go test ./...`
+6. Format code: `go fmt ./...`
+7. Submit a pull request
 
 ## License
 

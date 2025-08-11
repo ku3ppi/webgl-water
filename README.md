@@ -56,21 +56,28 @@ A modern implementation of a WebGL water simulation tutorial, ported from Rust/W
 
 ```
 webgl-water/
+├── docs/                # 📚 Comprehensive documentation
+│   ├── puml/           # PlantUML source diagrams (EN + DE)
+│   ├── svg/            # SVG exports for web integration
+│   ├── pdf/            # PDF exports for presentations
+│   ├── txt/            # Text exports for searchability
+│   └── README.md       # Detailed technical documentation
 ├── cmd/
-│   └── server/           # Main application entry point
+│   └── server/         # Main application entry point
 ├── internal/
-│   ├── app/             # HTTP server and routing
-│   ├── assets/          # Asset management
-│   └── state/           # Application state and 3D math
+│   ├── app/            # HTTP server and routing
+│   ├── assets/         # Asset management
+│   ├── math3d/         # 3D math utilities
+│   └── state/          # Application state management
 ├── web/
-│   ├── static/          # JavaScript frontend
-│   └── shaders/         # GLSL shader files
-├── assets/              # Texture files and meshes
-├── *.png               # Texture assets
-├── go.mod              # Go module definition
-├── Dockerfile          # Production container
-├── Dockerfile.dev      # Development container
-└── docker-compose.yml  # Docker compose configuration
+│   ├── static/         # JavaScript frontend
+│   └── shaders/        # GLSL shader files
+├── assets/             # Runtime texture files and meshes
+├── *.png              # Texture assets (dudvmap, normalmap, stone)
+├── go.mod             # Go module definition
+├── Dockerfile         # Production container
+├── Dockerfile.dev     # Development container
+└── docker-compose.yml # Docker compose configuration
 ```
 
 ## Controls
@@ -161,13 +168,25 @@ PORT=3000 ASSETS_PATH=./assets STATIC_PATH=./web/static go run ./cmd/server
 - **Meshes**: JSON format with vertices, normals, and UV coordinates
 - **Shaders**: GLSL files loaded dynamically
 
+## Documentation
+
+Comprehensive technical documentation is available in the `docs/` directory:
+
+- **Architecture Diagrams**: System overview, rendering pipeline, data flow, components
+- **Code Maps**: Detailed navigation through Go backend, JS frontend, shaders, and data structures  
+- **Multiple Formats**: PlantUML sources, SVG exports, PDF versions, and text outputs
+- **English + German**: Complete documentation in both languages
+
+See [docs/README.md](docs/README.md) for the complete technical documentation.
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+4. Update relevant documentation in `docs/` if needed
+5. Test thoroughly
+6. Submit a pull request
 
 ## License
 

@@ -1,0 +1,71 @@
+                           ┌───────────────────────────────────┐                                                                                                                               
+                           │Server                             │                                                                                                                               
+                           ├───────────────────────────────────┤                                                                                                                               
+                           │**Felder:**                        │                                                                                                                               
+                           │- router: *mux.Router              │                                                                                                                               
+                           │- assets: *Assets                  │                                                                                                                               
+                           │- appState: *State                 │                                                                                                                               
+                           │- upgrader: websocket.Upgrader     │                                                                                                                               
+                           │- clients: map[*websocket.Conn]bool│                                                                                                                               
+                           │- staticPath: string               │                                       ┌──────────────────────┐                                                                
+                           │- port: int                        │   ┌───────────────────────────────┐   │Mesh                  │   ┌───────────────────────────┐                                
+                           │                                   │   │**HTTP Routen:**               │   ├──────────────────────┤   │WaterUpdateRequest         │   ┌───────────────────────────┐
+                           │**HTTP Handler:**                  │   ├───────────────────────────────┤   │+ Name: string        │   ├───────────────────────────┤   │CameraUpdateRequest        │
+                           │+ handleIndex()                    │   │/assets/{filename} - Texturen  │   │+ Vertices: []float32 │   │+ reflectivity: *float32   │   ├───────────────────────────┤
+                           │+ handleAssetFile()                │   │/shaders/{name} - GLSL Dateien │   │+ Normals: []float32  │   │+ fresnelStrength: *float32│   │+ mouseDown: *{X, Y: int32}│
+                           │+ handleShader()                   │---│/api/meshes - Mesh Liste       │   │+ TexCoords: []float32│   │+ waveSpeed: *float32      │   │+ mouseUp: *bool           │
+                           │+ handleGetMeshes()                │   │/api/state - Aktueller Status  │   │+ Indices: []uint16   │   │+ useReflection: *bool     │   │+ mouseMove: *{X, Y: int32}│
+                           │+ handleGetMesh()                  │   │/ws - WebSocket Updates (60fps)│   │+ VertexCount: int    │   │+ useRefraction: *bool     │   │+ zoom: *float32           │
+                           │+ handleGetState()                 │   │                               │   │+ TriangleCount: int  │   └───────────────────────────┘   └───────────────────────────┘
+                           │+ handleUpdateWater()              │   └───────────────────────────────┘   └──────────────────────┘                                                                
+                           │+ handleUpdateCamera()             │                                                                                                                               
+                           │+ handleWebSocket()                │                                                                                                                               
+                           │                                   │                                                                                                                               
+                           │**Management:**                    │                                                                                                                               
+                           │+ NewServer(): *Server             │                                                                                                                               
+                           │+ Start(): error                   │                                                                                                                               
+                           │+ setupRoutes()                    │                                                                                                                               
+                           │+ startStateUpdates()              │                                                                                                                               
+                           └───────────────────────────────────┘                                                                                                                               
+                                                                                                                                                                                               
+                                                                                                                                                                                               
+                                                      ┌──────────────────────┐                                                                                                                 
+┌──────────────────────────────────────────────────┐  │State                 │                                                                                                                 
+│Assets                                            │  ├──────────────────────┤                                                                                                                 
+├──────────────────────────────────────────────────┤  │**Felder:**           │                                                                                                                 
+│**Daten:**                                        │  │- mu: sync.RWMutex    │                                                                                                                 
+│- meshes: map[string]*Mesh                        │  │- clock: float32      │                                                                                                                 
+│- textures: map[string]*Texture                   │  │- camera: *Camera     │                                                                                                                 
+│- basePath: string                                │  │- water: *Water       │                                                                                                                 
+│                                                  │  │- mouse: *Mouse       │                                                                                                                 
+│**Methoden:**                                     │  │- scenery: bool       │                                                                                                                 
+│+ Initialize(): error                             │  │                      │                                                                                                                 
+│+ GetMesh(name): (*Mesh, error)                   │  │**Methoden:**         │                                                                                                                 
+│+ ListMeshes(): []string                          │  │+ Update(msg: Message)│                                                                                                                 
+│+ CreateWaterMesh(size, segments): *Mesh          │  │+ GetClock(): float32 │                                                                                                                 
+│+ CreateTerrainMesh(size, segments, height): *Mesh│  │+ GetCamera(): Camera │                                                                                                                 
+└──────────────────────────────────────────────────┘  │+ GetWater(): Water   │                                                                                                                 
+                          |                           └──────────────────────┘                                                                                                                 
+                          |                                                                                                                                                                    
+                          |                       ┌──────────────────────────────┐                                                                                                             
+                          |                       │Camera                        │                                                                                                             
+                          |                       ├──────────────────────────────┤                                                                                                             
+                          |                       │**Position:**                 │                                                                                                             
+                          |                       │- position: Vec3              │                                                                                                             
+                          |                       │- target: Vec3                │                                                                                                             
+                          |                       │- distance: float32           │   ┌────────────────────────────────┐                                                                        
+                          |                       │- yaw: float32                │   │Water                           │                                                                        
+     ┌────────────────────────────────────────┐   │- pitch: float32              │   ├────────────────────────────────┤                                                                        
+     │**Generierte Meshes:**                  │   │                              │   │+ Reflectivity: float32 = 0.6   │                                                                        
+     ├────────────────────────────────────────┤   │**Grenzen:**                  │   │+ FresnelStrength: float32 = 2.0│                                                                        
+     │terrain: 50x50 units, 32x32 segments    │   │- minDistance: float32 = 5.0  │   │+ WaveSpeed: float32 = 0.03     │                                                                        
+     │                                        │   │- maxDistance: float32 = 150.0│   │+ UseReflection: bool = true    │                                                                        
+     └────────────────────────────────────────┘   │- minPitch: float32 = -1.5    │   │+ UseRefraction: bool = true    │                                                                        
+                                                  │- maxPitch: float32 = 1.5     │   │+ GetDudvOffset(time): float32  │                                                                        
+                                                  │                              │   └────────────────────────────────┘                                                                        
+                                                  │**Steuerung:**                │                                                                                                             
+                                                  │+ OrbitLeftRight(delta)       │                                                                                                             
+                                                  │+ OrbitUpDown(delta)          │                                                                                                             
+                                                  │+ Zoom(delta)                 │                                                                                                             
+                                                  │+ GetViewMatrix(): Mat4       │                                                                                                             
+                                                  └──────────────────────────────┘                                                                                                             

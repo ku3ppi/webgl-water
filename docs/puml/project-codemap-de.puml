@@ -1,0 +1,578 @@
+@startuml WebGL Water Projekt Code Map (Deutsch)
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontColor #000000
+skinparam linetype ortho
+
+title WebGL Water Tutorial - Vollständige Code-Karte (Deutsch)
+
+package "Go Backend - Hauptserver" as GoBackend {
+
+  class Server {
+    **Felder:**
+    - router: *mux.Router
+    - assets: *Assets
+    - appState: *State
+    - upgrader: websocket.Upgrader
+    - clients: map[*websocket.Conn]bool
+    - staticPath: string
+    - port: int
+
+    **HTTP Routen:**
+    + setupRoutes()
+    + handleIndex()
+    + handleAssetFile()
+    + handleShader()
+    + handleWebSocket()
+    + handleGetMeshes()
+    + handleGetMesh()
+    + handleGetTextures()
+    + handleGetState()
+    + handleUpdateWater()
+    + handleUpdateCamera()
+
+    **Server Management:**
+    + NewServer(assetsPath, staticPath, port): *Server
+    + Start(): error
+    + startStateUpdates()
+    + broadcastStateUpdate()
+    + sendStateUpdate(conn): error
+    + GetPort(): int
+  }
+
+  class Assets {
+    **Datenstrukturen:**
+    - meshes: map[string]*Mesh
+    - textures: map[string]*Texture
+    - basePath: string
+
+    **Asset Management:**
+    + NewAssets(basePath): *Assets
+    + Initialize(): error
+    + LoadMeshes(): error
+    + GetMesh(name): (*Mesh, error)
+    + ListMeshes(): []string
+    + GetTexture(name): (*Texture, error)
+    + ListTextures(): []string
+    + RegisterTexture(name, filePath, width, height, format)
+
+    **Mesh Generierung:**
+    + CreateWaterMesh(size: float32, segments: int): *Mesh
+    + CreateTerrainMesh(size, segments, heightScale: float32): *Mesh
+    + calculateNormals(vertices, indices, normals, segments)
+  }
+
+  class Mesh {
+    **Vertex Daten:**
+    + Name: string
+    + Vertices: []float32
+    + Normals: []float32
+    + TexCoords: []float32
+    + Indices: []uint16
+    + VertexCount: int
+    + TriangleCount: int
+  }
+
+  class Texture {
+    **Textur Metadaten:**
+    + Name: string
+    + Width: int
+    + Height: int
+    + Format: string
+    + FilePath: string
+  }
+
+}
+
+package "Go Backend - Zustandsmanagement" as StatePackage {
+
+  class State {
+    **Thread-Safe Status:**
+    - mu: sync.RWMutex
+    - clock: float32
+    - camera: *Camera
+    - mouse: *Mouse
+    - water: *Water
+    - scenery: bool
+    - lastTime: time.Time
+
+    **Status Zugriff:**
+    + NewState(): *State
+    + GetClock(): float32
+    + GetCamera(): Camera
+    + GetWater(): Water
+    + GetScenery(): bool
+    + Update(msg: Message)
+  }
+
+  class Camera {
+    **Kamera Parameter:**
+    - position: math3d.Vec3
+    - target: math3d.Vec3
+    - up: math3d.Vec3
+    - distance: float32
+    - yaw: float32
+    - pitch: float32
+    - minDistance: float32 = 5.0
+    - maxDistance: float32 = 150.0
+    - minPitch: float32 = -1.5
+    - maxPitch: float32 = 1.5
+
+    **Kamera Steuerung:**
+    + NewCamera(): *Camera
+    + OrbitLeftRight(delta: float32)
+    + OrbitUpDown(delta: float32)
+    + Zoom(delta: float32)
+    + GetViewMatrix(): math3d.Mat4
+    + GetPosition(): math3d.Vec3
+    + updatePosition()
+  }
+
+  class Mouse {
+    **Maus Status:**
+    - x: int32
+    - y: int32
+    - pressed: bool
+
+    **Maus Eingabe:**
+    + NewMouse(): *Mouse
+    + SetPos(x, y: int32)
+    + GetPos(): (int32, int32)
+    + SetPressed(pressed: bool)
+    + GetPressed(): bool
+  }
+
+  class Water {
+    **Wasser Eigenschaften:**
+    + Reflectivity: float32 = 0.6
+    + FresnelStrength: float32 = 2.0
+    + WaveSpeed: float32 = 0.03
+    + UseReflection: bool = true
+    + UseRefraction: bool = true
+
+    **Wasser Animation:**
+    + NewWater(): *Water
+    + GetDudvOffset(clockTime: float32): float32
+  }
+
+  interface Message {
+    **Nachrichten Interface:**
+    + message()
+  }
+
+  class AdvanceClockMessage {
+    + DeltaTime: float32
+  }
+
+  class MouseDownMessage {
+    + X, Y: int32
+  }
+
+  class MouseUpMessage {
+  }
+
+  class MouseMoveMessage {
+    + X, Y: int32
+  }
+
+  class ZoomMessage {
+    + Delta: float32
+  }
+
+  class SetReflectivityMessage {
+    + Value: float32
+  }
+
+  class SetFresnelMessage {
+    + Value: float32
+  }
+
+  class SetWaveSpeedMessage {
+    + Value: float32
+  }
+
+  class UseReflectionMessage {
+    + Value: bool
+  }
+
+  class UseRefractionMessage {
+    + Value: bool
+  }
+
+  class ShowSceneryMessage {
+    + Value: bool
+  }
+
+}
+
+package "Math3D Bibliothek" as Math3DPackage {
+
+  class Vec3 {
+    **3D Vektor:**
+    + X: float32
+    + Y: float32
+    + Z: float32
+
+    **Vektor Operationen:**
+    + NewVec3(x, y, z: float32): Vec3
+    + Add(other: Vec3): Vec3
+    + Sub(other: Vec3): Vec3
+    + Cross(other: Vec3): Vec3
+    + Dot(other: Vec3): float32
+    + Normalize(): Vec3
+    + Length(): float32
+    + Scale(factor: float32): Vec3
+
+    **Konstanten:**
+    + Vec3Up: Vec3 = {0, 1, 0}
+    + Vec3Zero: Vec3 = {0, 0, 0}
+  }
+
+  class Mat4 {
+    **4x4 Matrix:**
+    - elements: [16]float32
+
+    **Matrix Operationen:**
+    + NewMat4(): Mat4
+    + Identity(): Mat4
+    + Multiply(other: Mat4): Mat4
+    + Perspective(fovy, aspect, near, far: float32): Mat4
+    + LookAt(eye, center, up: Vec3): Mat4
+    + Translate(v: Vec3): Mat4
+    + Scale(v: Vec3): Mat4
+    + ToSlice(): []float32
+  }
+
+}
+
+package "JavaScript Frontend" as JSFrontend {
+
+  class WebGLWaterApp {
+    **DOM Elemente:**
+    - canvas: HTMLCanvasElement
+    - gl: WebGLRenderingContext
+
+    **WebGL Ressourcen:**
+    - shaders: object
+    - programs: object
+    - meshes: object
+    - textures: object
+    - framebuffers: object
+
+    **Anwendungsstatus:**
+    - state: {
+      clock: number,
+      camera: { position, viewMatrix },
+      water: { reflectivity, fresnelStrength, waveSpeed, useReflection, useRefraction },
+      scenery: boolean
+    }
+
+    **Konstanten:**
+    - CANVAS_WIDTH: 1200
+    - CANVAS_HEIGHT: 800
+    - WATER_TILE_Y_POS: 0.0
+    - REFLECTION_TEXTURE_WIDTH: 320
+    - REFLECTION_TEXTURE_HEIGHT: 180
+    - REFRACTION_TEXTURE_WIDTH: 1280
+    - REFRACTION_TEXTURE_HEIGHT: 720
+
+    **Maus Interaktion:**
+    - mousePressed: boolean
+    - lastMouseX: number
+    - lastMouseY: number
+
+    **WebSocket:**
+    - ws: WebSocket
+
+    **Initialisierung:**
+    + constructor()
+    + init(): Promise<void>
+    + setupCanvas()
+    + setupWebGL()
+    + loadShaders(): Promise<void>
+    + loadAssets(): Promise<void>
+    + setupFramebuffers()
+    + setupEventHandlers()
+    + connectWebSocket()
+
+    **Rendering:**
+    + render()
+    + renderWater()
+    + renderMeshes()
+    + clearFramebuffers()
+
+    **Netzwerk:**
+    + sendCameraUpdate(data)
+    + sendWaterUpdate(data)
+  }
+
+  class ShaderProgram {
+    **Shader Ressourcen:**
+    + program: WebGLProgram
+    + uniformLocations: object
+    + attribLocations: object
+
+    **Shader Kompilierung:**
+    + createProgram(vertexSource, fragmentSource): WebGLProgram
+    + compileShader(source, type): WebGLShader
+    + linkProgram(program)
+    + getUniformLocations(program, uniforms[])
+    + getAttribLocations(program, attributes[])
+  }
+
+  class MeshBuffer {
+    **GPU Puffer:**
+    + vertexBuffer: WebGLBuffer
+    + normalBuffer: WebGLBuffer
+    + texCoordBuffer: WebGLBuffer
+    + indexBuffer: WebGLBuffer
+    + indexCount: number
+
+    **Puffer Management:**
+    + createMeshBuffers(meshData): MeshBuffer
+    + bindBuffers(gl, program)
+    + drawElements(gl)
+  }
+
+  class Framebuffer {
+    **Framebuffer Komponenten:**
+    + framebuffer: WebGLFramebuffer
+    + colorTexture: WebGLTexture
+    + depthTexture: WebGLTexture
+    + width: number
+    + height: number
+
+    **Framebuffer Setup:**
+    + createFramebuffer(gl, width, height): Framebuffer
+    + bindForWriting(gl)
+    + bindForReading(gl, textureUnit)
+    + cleanup(gl)
+  }
+
+  class TextureManager {
+    **Textur Cache:**
+    - textures: Map<string, WebGLTexture>
+
+    **Textur Verwaltung:**
+    + loadTexture(gl, url): Promise<WebGLTexture>
+    + bindTexture(gl, texture, unit)
+    + setTextureParameters(gl, texture)
+  }
+
+}
+
+package "Shader Programme" as ShaderPackage {
+
+  class WaterVertexShader {
+    **Attribute:**
+    + attribute position: vec3
+
+    **Uniforms:**
+    + uniform perspective: mat4
+    + uniform model: mat4
+    + uniform view: mat4
+    + uniform cameraPos: vec3
+
+    **Varyings:**
+    + varying clipSpace: vec4
+    + varying textureCoords: vec2
+    + varying fromFragmentToCamera: vec3
+
+    **Konstanten:**
+    + const tiling: float = 4.0
+  }
+
+  class WaterFragmentShader {
+    **Textur Samplers:**
+    + uniform refractionTexture: sampler2D
+    + uniform reflectionTexture: sampler2D
+    + uniform dudvTexture: sampler2D
+    + uniform normalMap: sampler2D
+    + uniform waterDepthTexture: sampler2D
+
+    **Wasser Eigenschaften:**
+    + uniform dudvOffset: float
+    + uniform waterReflectivity: float
+    + uniform fresnelStrength: float
+
+    **Konstanten:**
+    + const waterDistortionStrength: float = 0.03
+    + const shineDamper: float = 20.0
+
+    **Farben:**
+    + vec4 shallowWaterColor = vec4(0.0, 0.1, 0.3, 1.0)
+    + vec4 deepWaterColor = vec4(0.0, 0.1, 0.2, 1.0)
+    + vec3 sunlightColor = vec3(1.0, 1.0, 1.0)
+    + vec3 sunlightDir = normalize(vec3(-1.0, -1.0, 0.5))
+
+    **Funktionen:**
+    + getNormal(textureCoords: vec2): vec3
+    + main()
+  }
+
+  class MeshVertexShader {
+    **Attribute:**
+    + attribute position: vec3
+    + attribute normal: vec3
+    + attribute uvs: vec2
+
+    **Uniforms:**
+    + uniform perspective: mat4
+    + uniform view: mat4
+    + uniform model: mat4
+    + uniform clipPlane: vec4
+  }
+
+  class MeshFragmentShader {
+    **Uniforms:**
+    + uniform tex: sampler2D
+
+    **Varyings:**
+    + varying vUvs: vec2
+  }
+
+}
+
+package "Konfiguration & Assets" as ConfigPackage {
+
+  class HTTPRouten {
+    **Statische Assets:**
+    + GET /static/* → web/static/
+    + GET /assets/{filename} → textures
+    + GET /shaders/{name} → shader files
+
+    **API Endpunkte:**
+    + GET /api/meshes → mesh list
+    + GET /api/meshes/{name} → specific mesh
+    + GET /api/textures → texture list
+    + GET /api/state → current state
+    + POST /api/state/water → update water
+    + POST /api/state/camera → update camera
+
+    **Real-time:**
+    + WebSocket /ws → state updates
+  }
+
+  class AssetFiles {
+    **Texturen:**
+    + dudvmap.png (512x512 RGBA)
+    + normalmap.png (512x512 RGBA)
+    + stone-texture.png (512x512 RGBA)
+
+    **Shader Dateien:**
+    + water-vertex.glsl
+    + water-fragment.glsl
+    + mesh-vertex.glsl
+    + mesh-fragment.glsl
+    + textured-quad-vertex.glsl
+    + textured-quad-fragment.glsl
+
+    **Generierte Meshes:**
+    + water_plane (20x20 units, 64x64 segments)
+    + terrain (50x50 units, 32x32 segments, 5.0 height)
+  }
+
+}
+
+package "HTTP Request/Response Strukturen" as HTTPStructs {
+
+  class WaterUpdateRequest {
+    + reflectivity: *float32
+    + fresnelStrength: *float32
+    + waveSpeed: *float32
+    + useReflection: *bool
+    + useRefraction: *bool
+  }
+
+  class CameraUpdateRequest {
+    + mouseDown: *{X, Y: int32}
+    + mouseUp: *bool
+    + mouseMove: *{X, Y: int32}
+    + zoom: *float32
+  }
+
+  class StateResponse {
+    + clock: float32
+    + scenery: bool
+    + camera: {position: [3]float32, viewMatrix: []float32}
+    + water: Water
+  }
+
+}
+
+' Verbindungen zwischen Paketen
+Server *-- Assets : verwendet
+Server *-- State : verwaltet
+State *-- Camera : enthält
+State *-- Mouse : enthält
+State *-- Water : enthält
+Camera --> Vec3 : verwendet
+Camera --> Mat4 : verwendet
+
+WebGLWaterApp --> Server : HTTP/WebSocket
+Assets --> Mesh : generiert
+Assets --> Texture : verwaltet
+
+' Message Implementierungen
+AdvanceClockMessage ..|> Message
+MouseDownMessage ..|> Message
+MouseUpMessage ..|> Message
+MouseMoveMessage ..|> Message
+ZoomMessage ..|> Message
+SetReflectivityMessage ..|> Message
+SetFresnelMessage ..|> Message
+SetWaveSpeedMessage ..|> Message
+UseReflectionMessage ..|> Message
+UseRefractionMessage ..|> Message
+ShowSceneryMessage ..|> Message
+
+' JavaScript zu Go Verbindungen
+WebGLWaterApp --> HTTPRouten : nutzt
+WebGLWaterApp --> WaterUpdateRequest : sendet
+WebGLWaterApp --> CameraUpdateRequest : sendet
+WebGLWaterApp --> StateResponse : empfängt
+
+' Shader Verbindungen
+WebGLWaterApp --> WaterVertexShader : kompiliert
+WebGLWaterApp --> WaterFragmentShader : kompiliert
+WebGLWaterApp --> MeshVertexShader : kompiliert
+WebGLWaterApp --> MeshFragmentShader : kompiliert
+
+' Asset Verbindungen
+WebGLWaterApp --> AssetFiles : lädt
+Assets --> AssetFiles : bereit
+
+note top of Server
+**Server Konfiguration:**
+- Port: 8080 (default)
+- Static Path: web/static/
+- Assets Path: assets/
+- WebSocket Updates: 60fps (16ms Ticker)
+- CORS: Alle Origins erlaubt (Dev Mode)
+end note
+
+note bottom of WebGLWaterApp
+**Rendering Pipeline (60fps):**
+1. clearFramebuffers()
+2. Refraktion Pass → refractionFramebuffer
+3. Reflektion Pass → reflectionFramebuffer
+4. Hauptszene Pass → Canvas
+5. Water Rendering mit Multi-Texturing
+6. Terrain Rendering (optional)
+end note
+
+note right of Water
+**Wasser Animation Formel:**
+dudvOffset = (clockTime / 1000.0) * waveSpeed
+Standardwerte optimiert für realistische Wasserbewegung
+end note
+
+note left of Camera
+**Orbit Camera System:**
+- Spherical Koordinaten (yaw, pitch, distance)
+- Maus Drag für Rotation
+- Mausrad für Zoom
+- Automatische Position Update
+end note
+
+@enduml
