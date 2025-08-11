@@ -1,0 +1,11 @@
+           ┌───────────────────────────────────────────┐                             
+           │**Water Shader Pipeline:**                 │   ┌────────────────────────┐
+           ├───────────────────────────────────────────┤   │**Real-time Updates:**  │
+           │2. Sample dudv texture for distortion      │   ├────────────────────────┤
+┌─┐  ┌─┐   │3. Sample reflection/refraction textures   │   │- WebSocket state sync  │
+│ │  │ │   │4. Apply Fresnel effect                    │   │- Mouse/keyboard input  │
+├─┤  ├─┤   │5. Calculate specular highlights           │   │- Camera orbit controls │
+└─┘  └─┘   │6. Mix reflection/refraction based on angle│   │- Water property changes│
+           │7. Blend with water base color             │   │                        │
+           │                                           │   └────────────────────────┘
+           └───────────────────────────────────────────┘                             

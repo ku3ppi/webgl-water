@@ -1,0 +1,106 @@
+@startuml WebGL Water Rendering Pipeline
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontColor #000000
+
+title WebGL Water Tutorial - Rendering Pipeline State Diagram
+
+state "Initialize WebGL" as Init {
+  Init : - Create WebGL context
+  Init : - Load VAO/Depth extensions
+  Init : - Setup viewport
+}
+
+state "Load Assets" as LoadAssets {
+  LoadAssets : - Load shaders (vertex/fragment)
+  LoadAssets : - Compile shader programs
+  LoadAssets : - Load textures (dudv, normal, stone)
+  LoadAssets : - Load meshes (water_plane, terrain)
+  LoadAssets : - Create GPU buffers
+}
+
+state "Setup Framebuffers" as SetupFB {
+  SetupFB : - Create reflection framebuffer
+  SetupFB : - Create refraction framebuffer
+  SetupFB : - Setup depth textures
+  SetupFB : - Configure texture parameters
+}
+
+state "Render Loop" as RenderLoop {
+
+  state "Update State" as UpdateState {
+    UpdateState : - Update clock time
+    UpdateState : - Update camera matrix
+    UpdateState : - Update water properties
+    UpdateState : - Process user input
+  }
+
+  state "Render Refraction" as RenderRefraction {
+    RenderRefraction : - Bind refraction framebuffer
+    RenderRefraction : - Set clipping plane (below water)
+    RenderRefraction : - Render terrain mesh
+    RenderRefraction : - Apply stone texture
+  }
+
+  state "Render Reflection" as RenderReflection {
+    RenderReflection : - Bind reflection framebuffer
+    RenderReflection : - Set clipping plane (above water)
+    RenderReflection : - Mirror view matrix
+    RenderReflection : - Render terrain mesh
+  }
+
+  state "Render Main Scene" as RenderMain {
+    RenderMain : - Bind main framebuffer
+    RenderMain : - Clear depth/color buffers
+    RenderMain : - Render water surface
+    RenderMain : - Render terrain (no clipping)
+    RenderMain : - Apply multi-texturing
+  }
+
+  state "Render Water" as RenderWater {
+    RenderWater : - Use water shader program
+    RenderWater : - Bind water mesh
+    RenderWater : - Set perspective/view matrices
+    RenderWater : - Bind reflection texture (TEXTURE1)
+    RenderWater : - Bind refraction texture (TEXTURE0)
+    RenderWater : - Bind dudv texture (TEXTURE2)
+    RenderWater : - Bind normal map (TEXTURE3)
+    RenderWater : - Set water uniforms (reflectivity, fresnel, etc.)
+    RenderWater : - Calculate dudv offset for animation
+    RenderWater : - Draw water plane triangles
+  }
+
+  UpdateState --> RenderRefraction
+  RenderRefraction --> RenderReflection
+  RenderReflection --> RenderMain
+  RenderMain --> RenderWater
+  RenderWater --> UpdateState : Next Frame
+}
+
+[*] --> Init
+Init --> LoadAssets : Success
+LoadAssets --> SetupFB : Assets Loaded
+SetupFB --> RenderLoop : FB Ready
+RenderLoop --> [*] : Error/Exit
+
+note right of RenderWater
+  **Water Shader Pipeline:**
+  1. Transform vertices to clip space
+  2. Sample dudv texture for distortion
+  3. Sample reflection/refraction textures
+  4. Apply Fresnel effect
+  5. Calculate specular highlights
+  6. Mix reflection/refraction based on angle
+  7. Blend with water base color
+end note
+
+note left of UpdateState
+  **Real-time Updates:**
+  - 60 FPS render loop
+  - WebSocket state sync
+  - Mouse/keyboard input
+  - Camera orbit controls
+  - Water property changes
+end note
+
+@enduml

@@ -1,0 +1,84 @@
+@startuml WebGL Water System Architecture
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontColor #000000
+
+title WebGL Water Tutorial - System Architecture
+
+package "Frontend (Browser)" {
+  [HTML Canvas] as Canvas
+  [WebGL Context] as WebGL
+  [JavaScript Application] as JSApp
+  [Shader Programs] as Shaders
+  [Texture Manager] as Textures
+  [Mesh Buffers] as Meshes
+  [Framebuffers] as FBs
+
+  Canvas --> WebGL
+  JSApp --> WebGL
+  JSApp --> Shaders
+  JSApp --> Textures
+  JSApp --> Meshes
+  JSApp --> FBs
+}
+
+package "Backend (Go Server)" {
+  [HTTP Server] as HTTPServer
+  [Static File Server] as StaticFS
+  [Asset Manager] as AssetMgr
+  [State Manager] as StateMgr
+  [WebSocket Handler] as WSHandler
+  [Camera System] as CameraSys
+  [Math3D Library] as Math3D
+
+  HTTPServer --> StaticFS
+  HTTPServer --> AssetMgr
+  HTTPServer --> StateMgr
+  HTTPServer --> WSHandler
+  StateMgr --> CameraSys
+  CameraSys --> Math3D
+}
+
+cloud "File System" {
+  [Shader Files (.glsl)] as ShaderFiles
+  [Texture Files (.png)] as TextureFiles
+  [Mesh Data (.json)] as MeshFiles
+  [Static Assets] as StaticAssets
+}
+
+database "Runtime Data" {
+  [Application State] as AppState
+  [Camera State] as CameraState
+  [Water Properties] as WaterProps
+  [Scene Data] as SceneData
+}
+
+' Connections
+JSApp <--> WSHandler : Real-time Updates
+JSApp --> HTTPServer : HTTP Requests
+HTTPServer --> ShaderFiles : Serve Shaders
+HTTPServer --> TextureFiles : Serve Textures
+HTTPServer --> MeshFiles : Serve Meshes
+HTTPServer --> StaticAssets : Serve JS/HTML
+AssetMgr --> TextureFiles
+AssetMgr --> MeshFiles
+StateMgr --> AppState
+StateMgr --> CameraState
+StateMgr --> WaterProps
+StateMgr --> SceneData
+
+note right of JSApp
+  - WebGL Rendering Pipeline
+  - Multi-pass rendering
+  - Real-time animation
+  - User interaction handling
+end note
+
+note left of HTTPServer
+  - REST API endpoints
+  - Asset serving
+  - WebSocket real-time updates
+  - CORS handling
+end note
+
+@enduml
