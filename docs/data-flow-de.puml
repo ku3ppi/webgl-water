@@ -1,0 +1,105 @@
+@startuml WebGL Water Data Flow (Deutsch)
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontColor #000000
+
+title WebGL Water Tutorial - Datenfluss Aktivitätsdiagramm
+
+|Browser Frontend|
+start
+:Benutzer lädt Seite;
+:WebGL Kontext initialisieren;
+:Shader von /shaders/ laden;
+:Shader Programme kompilieren;
+:Texturen von /assets/ laden;
+:Meshes von /api/meshes laden;
+:GPU Puffer erstellen;
+:Framebuffer einrichten;
+
+|Go Backend|
+:HTTP Server startet;
+:Asset Manager initialisieren;
+:Wasser/Terrain Meshes generieren;
+:Status Update Ticker starten (60fps);
+:WebSocket Handler starten;
+
+|Browser Frontend|
+:WebSocket verbinden;
+:Render Schleife starten;
+
+repeat
+  |Browser Frontend|
+  :Lokale Uhr aktualisieren;
+  :Benutzereingaben verarbeiten (Maus/Tastatur);
+
+  if (Benutzerinteraktion?) then (ja)
+    :Kamera Update an /api/state/camera senden;
+    :Wasser Eigenschaften an /api/state/water senden;
+    |Go Backend|
+    :Kamera Status aktualisieren;
+    :Wasser Eigenschaften aktualisieren;
+    :Via WebSocket übertragen;
+    |Browser Frontend|
+    :WebSocket Update empfangen;
+  else (nein)
+  endif
+
+  :Framebuffer leeren;
+
+  note right
+    **Refraktions Pass**
+    Szene unter Wasser rendern
+  end note
+  :Refraktions Framebuffer binden;
+  :Clipping Plane setzen [0,-1,0,0];
+  :Terrain mit Stein Textur rendern;
+
+  note right
+    **Reflektions Pass**
+    Szene über Wasser rendern (gespiegelt)
+  end note
+  :Reflektions Framebuffer binden;
+  :Clipping Plane setzen [0,1,0,0];
+  :View Matrix spiegeln;
+  :Terrain rendern;
+
+  note right
+    **Hauptszenen Pass**
+    Finales Wasser Rendering
+  end note
+  :Haupt Framebuffer binden;
+  :Wasser Shader Programm verwenden;
+  :Wasser Ebenen Mesh binden;
+  :Transformations Matrizen setzen;
+  :Reflektions Textur → TEXTURE1 binden;
+  :Refraktions Textur → TEXTURE0 binden;
+  :Dudv Textur → TEXTURE2 binden;
+  :Normal Map → TEXTURE3 binden;
+  :Dudv Animations Offset berechnen;
+  :Wasser Uniforms setzen (Reflektivität, Fresnel);
+  :Wasser Dreiecke zeichnen;
+  :Terrain rendern (kein Clipping);
+  :Auf Bildschirm darstellen;
+
+  |Go Backend|
+  :Anwendungs Uhr aktualisieren;
+  :Status an WebSocket Clients übertragen;
+
+repeat while (Anwendung läuft?)
+
+|Browser Frontend|
+:WebGL Ressourcen aufräumen;
+:WebSocket Verbindung schließen;
+stop
+
+note left
+  **Wichtige Datenstrukturen:**
+  - Mesh: Vertices, Normals, TexCoords, Indices
+  - Textur: WebGL Textur Objekte + Metadaten
+  - Shader Programm: Kompilierte Vertex + Fragment Shader
+  - Framebuffer: Farb Textur + Tiefen Textur
+  - Status: Kamera, Wasser Eigenschaften, Uhr, Szenerie Flags
+  - WebSocket Nachrichten: Echtzeit Status Synchronisation
+end note
+
+@enduml

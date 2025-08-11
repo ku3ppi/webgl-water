@@ -1,0 +1,84 @@
+@startuml WebGL Water System Architecture (Deutsch)
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontColor #000000
+
+title WebGL Water Tutorial - System Architektur
+
+package "Frontend (Browser)" {
+  [HTML Canvas] as Canvas
+  [WebGL Kontext] as WebGL
+  [JavaScript Anwendung] as JSApp
+  [Shader Programme] as Shaders
+  [Textur Manager] as Textures
+  [Mesh Puffer] as Meshes
+  [Framebuffer] as FBs
+
+  Canvas --> WebGL
+  JSApp --> WebGL
+  JSApp --> Shaders
+  JSApp --> Textures
+  JSApp --> Meshes
+  JSApp --> FBs
+}
+
+package "Backend (Go Server)" {
+  [HTTP Server] as HTTPServer
+  [Statische Dateien Server] as StaticFS
+  [Asset Manager] as AssetMgr
+  [Status Manager] as StateMgr
+  [WebSocket Handler] as WSHandler
+  [Kamera System] as CameraSys
+  [Math3D Bibliothek] as Math3D
+
+  HTTPServer --> StaticFS
+  HTTPServer --> AssetMgr
+  HTTPServer --> StateMgr
+  HTTPServer --> WSHandler
+  StateMgr --> CameraSys
+  CameraSys --> Math3D
+}
+
+cloud "Dateisystem" {
+  [Shader Dateien (.glsl)] as ShaderFiles
+  [Textur Dateien (.png)] as TextureFiles
+  [Mesh Daten (.json)] as MeshFiles
+  [Statische Assets] as StaticAssets
+}
+
+database "Laufzeit Daten" {
+  [Anwendungsstatus] as AppState
+  [Kamera Status] as CameraState
+  [Wasser Eigenschaften] as WaterProps
+  [Szenen Daten] as SceneData
+}
+
+' Verbindungen
+JSApp <--> WSHandler : Echtzeit Updates
+JSApp --> HTTPServer : HTTP Anfragen
+HTTPServer --> ShaderFiles : Shader bereitstellen
+HTTPServer --> TextureFiles : Texturen bereitstellen
+HTTPServer --> MeshFiles : Meshes bereitstellen
+HTTPServer --> StaticAssets : JS/HTML bereitstellen
+AssetMgr --> TextureFiles
+AssetMgr --> MeshFiles
+StateMgr --> AppState
+StateMgr --> CameraState
+StateMgr --> WaterProps
+StateMgr --> SceneData
+
+note right of JSApp
+  - WebGL Rendering Pipeline
+  - Multi-Pass Rendering
+  - Echtzeit Animation
+  - Benutzerinteraktion
+end note
+
+note left of HTTPServer
+  - REST API Endpunkte
+  - Asset Bereitstellung
+  - WebSocket Echtzeit Updates
+  - CORS Behandlung
+end note
+
+@enduml

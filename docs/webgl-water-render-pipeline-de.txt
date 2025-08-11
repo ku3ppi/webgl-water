@@ -1,0 +1,11 @@
+           ┌─────────────────────────────────────────────────────┐                                      
+           │**Wasser Shader Pipeline:**                          │   ┌─────────────────────────────────┐
+           ├─────────────────────────────────────────────────────┤   │**Echtzeit Updates:**            │
+           │2. Dudv Textur für Verzerrung sampeln                │   ├─────────────────────────────────┤
+┌─┐  ┌─┐   │3. Reflektions/Refraktions Texturen sampeln          │   │- WebSocket Status Sync          │
+│ │  │ │   │4. Fresnel Effekt anwenden                           │   │- Maus/Tastatur Eingabe          │
+├─┤  ├─┤   │5. Spiegelung Highlights berechnen                   │   │- Kamera Orbit Steuerung         │
+└─┘  └─┘   │6. Reflektion/Refraktion basierend auf Winkel mischen│   │- Wasser Eigenschaften Änderungen│
+           │7. Mit Wasser Grundfarbe vermischen                  │   │                                 │
+           │                                                     │   └─────────────────────────────────┘
+           └─────────────────────────────────────────────────────┘                                      

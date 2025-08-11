@@ -1,0 +1,236 @@
+@startuml WebGL Water Components (Deutsch)
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontColor #000000
+
+title WebGL Water Tutorial - Komponenten Klassendiagramm
+
+package "Go Backend Komponenten" {
+  class Server {
+    - router: *mux.Router
+    - assets: *Assets
+    - appState: *State
+    - upgrader: websocket.Upgrader
+    - clients: map[*websocket.Conn]bool
+    - staticPath: string
+    - port: int
+    + NewServer(): *Server
+    + Start(): error
+    + setupRoutes()
+    + handleIndex()
+    + handleAssetFile()
+    + handleShader()
+    + handleWebSocket()
+  }
+
+  class Assets {
+    - meshes: map[string]*Mesh
+    - textures: map[string]*Texture
+    - basePath: string
+    + NewAssets(): *Assets
+    + Initialize(): error
+    + CreateWaterMesh(): *Mesh
+    + CreateTerrainMesh(): *Mesh
+    + GetMesh(): (*Mesh, error)
+    + ListMeshes(): []string
+  }
+
+  class State {
+    - mu: sync.RWMutex
+    - clock: Clock
+    - camera: *Camera
+    - water: Water
+    - scenery: Scenery
+    + NewState(): *State
+    + Update(Message)
+    + GetCamera(): *Camera
+    + GetWater(): Water
+  }
+
+  class Camera {
+    - position: math3d.Vec3
+    - target: math3d.Vec3
+    - up: math3d.Vec3
+    - distance: float32
+    - yaw: float32
+    - pitch: float32
+    - minDistance: float32
+    - maxDistance: float32
+    + NewCamera(): *Camera
+    + OrbitLeftRight(delta: float32)
+    + OrbitUpDown(delta: float32)
+    + Zoom(delta: float32)
+    + GetViewMatrix(): math3d.Mat4
+  }
+
+  class Mesh {
+    + Name: string
+    + Vertices: []float32
+    + Normals: []float32
+    + TexCoords: []float32
+    + Indices: []uint16
+    + VertexCount: int
+    + TriangleCount: int
+  }
+
+  class Water {
+    + Reflectivity: float32
+    + FresnelStrength: float32
+    + WaveSpeed: float32
+    + UseReflection: bool
+    + UseRefraction: bool
+  }
+
+  Server *-- Assets
+  Server *-- State
+  State *-- Camera
+  State *-- Water
+  Assets *-- Mesh
+}
+
+package "JavaScript Frontend Komponenten" {
+  class WebGLWaterApp {
+    - gl: WebGLRenderingContext
+    - canvas: HTMLCanvasElement
+    - programs: object
+    - meshes: object
+    - textures: object
+    - framebuffers: object
+    - state: object
+    - ws: WebSocket
+    + init(): Promise<void>
+    + loadShaders(): Promise<void>
+    + loadAssets(): Promise<void>
+    + setupFramebuffers()
+    + render()
+    + renderWater()
+    + renderMeshes()
+    + connectWebSocket()
+  }
+
+  class ShaderProgram {
+    + program: WebGLProgram
+    + uniformLocations: object
+    + attribLocations: object
+    + createProgram(): WebGLProgram
+    + compileShader(): WebGLShader
+    + linkProgram()
+  }
+
+  class MeshBuffer {
+    + vertexBuffer: WebGLBuffer
+    + normalBuffer: WebGLBuffer
+    + texCoordBuffer: WebGLBuffer
+    + indexBuffer: WebGLBuffer
+    + indexCount: number
+    + createMeshBuffers(): MeshBuffer
+  }
+
+  class Framebuffer {
+    + framebuffer: WebGLFramebuffer
+    + colorTexture: WebGLTexture
+    + depthTexture: WebGLTexture
+    + width: number
+    + height: number
+    + createFramebuffer(): Framebuffer
+  }
+
+  class TextureManager {
+    - textures: Map<string, WebGLTexture>
+    + loadTexture(): Promise<WebGLTexture>
+    + bindTexture()
+  }
+
+  WebGLWaterApp *-- ShaderProgram
+  WebGLWaterApp *-- MeshBuffer
+  WebGLWaterApp *-- Framebuffer
+  WebGLWaterApp *-- TextureManager
+}
+
+package "Shader Komponenten" {
+  class WaterVertexShader {
+    + attribute position: vec3
+    + uniform perspective: mat4
+    + uniform view: mat4
+    + uniform model: mat4
+    + varying clipSpace: vec4
+    + varying textureCoords: vec2
+  }
+
+  class WaterFragmentShader {
+    + uniform refractionTexture: sampler2D
+    + uniform reflectionTexture: sampler2D
+    + uniform dudvTexture: sampler2D
+    + uniform normalMap: sampler2D
+    + uniform waterReflectivity: float
+    + uniform fresnelStrength: float
+    + uniform dudvOffset: float
+  }
+
+  class MeshVertexShader {
+    + attribute position: vec3
+    + attribute normal: vec3
+    + attribute uvs: vec2
+    + uniform clipPlane: vec4
+  }
+
+  class MeshFragmentShader {
+    + uniform tex: sampler2D
+    + varying vUvs: vec2
+  }
+}
+
+package "Math3D Komponenten" {
+  class Vec3 {
+    + X: float32
+    + Y: float32
+    + Z: float32
+    + NewVec3(): Vec3
+    + Add(): Vec3
+    + Sub(): Vec3
+    + Cross(): Vec3
+    + Normalize(): Vec3
+  }
+
+  class Mat4 {
+    - elements: [16]float32
+    + NewMat4(): Mat4
+    + Multiply(): Mat4
+    + Perspective(): Mat4
+    + LookAt(): Mat4
+    + ToSlice(): []float32
+  }
+
+  Camera ..> Vec3
+  Camera ..> Mat4
+}
+
+' Verbindungen zwischen Paketen
+WebGLWaterApp ..> Server : HTTP/WebSocket
+Server ..> WebGLWaterApp : Asset/Status Daten
+WaterVertexShader ..> WaterFragmentShader : Pipeline
+MeshVertexShader ..> MeshFragmentShader : Pipeline
+
+note top of Server
+  **REST API Endpunkte:**
+  - GET / (Hauptseite)
+  - GET /static/* (JS/CSS)
+  - GET /assets/* (Texturen)
+  - GET /shaders/* (GLSL)
+  - GET /api/meshes
+  - GET /api/state
+  - POST /api/state/water
+  - POST /api/state/camera
+  - WebSocket /ws
+end note
+
+note bottom of WebGLWaterApp
+  **Rendering Pipeline:**
+  1. Refraktion Pass → Framebuffer
+  2. Reflektion Pass → Framebuffer
+  3. Hauptszene → Bildschirm
+  4. Wasseroberfläche mit Multi-Texturing
+  5. Echtzeit Animationsschleife (60fps)
+end note
+
+@enduml

@@ -1,0 +1,106 @@
+@startuml WebGL Water Rendering Pipeline (Deutsch)
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontColor #000000
+
+title WebGL Water Tutorial - Rendering Pipeline Zustandsdiagramm
+
+state "WebGL Initialisieren" as Init {
+  Init : - WebGL Kontext erstellen
+  Init : - VAO/Depth Erweiterungen laden
+  Init : - Viewport einrichten
+}
+
+state "Assets Laden" as LoadAssets {
+  LoadAssets : - Shader laden (Vertex/Fragment)
+  LoadAssets : - Shader Programme kompilieren
+  LoadAssets : - Texturen laden (dudv, normal, stein)
+  LoadAssets : - Meshes laden (water_plane, terrain)
+  LoadAssets : - GPU Puffer erstellen
+}
+
+state "Framebuffer Einrichten" as SetupFB {
+  SetupFB : - Reflektions Framebuffer erstellen
+  SetupFB : - Refraktions Framebuffer erstellen
+  SetupFB : - Tiefen Texturen einrichten
+  SetupFB : - Textur Parameter konfigurieren
+}
+
+state "Render Schleife" as RenderLoop {
+
+  state "Status Aktualisieren" as UpdateState {
+    UpdateState : - Uhrzeit aktualisieren
+    UpdateState : - Kamera Matrix aktualisieren
+    UpdateState : - Wasser Eigenschaften aktualisieren
+    UpdateState : - Benutzereingaben verarbeiten
+  }
+
+  state "Refraktion Rendern" as RenderRefraction {
+    RenderRefraction : - Refraktions Framebuffer binden
+    RenderRefraction : - Clipping Plane setzen (unter Wasser)
+    RenderRefraction : - Terrain Mesh rendern
+    RenderRefraction : - Stein Textur anwenden
+  }
+
+  state "Reflektion Rendern" as RenderReflection {
+    RenderReflection : - Reflektions Framebuffer binden
+    RenderReflection : - Clipping Plane setzen (über Wasser)
+    RenderReflection : - View Matrix spiegeln
+    RenderReflection : - Terrain Mesh rendern
+  }
+
+  state "Hauptszene Rendern" as RenderMain {
+    RenderMain : - Haupt Framebuffer binden
+    RenderMain : - Tiefen/Farb Puffer leeren
+    RenderMain : - Wasseroberfläche rendern
+    RenderMain : - Terrain rendern (kein Clipping)
+    RenderMain : - Multi-Texturing anwenden
+  }
+
+  state "Wasser Rendern" as RenderWater {
+    RenderWater : - Wasser Shader Programm verwenden
+    RenderWater : - Wasser Mesh binden
+    RenderWater : - Perspektive/View Matrizen setzen
+    RenderWater : - Reflektions Textur binden (TEXTURE1)
+    RenderWater : - Refraktions Textur binden (TEXTURE0)
+    RenderWater : - Dudv Textur binden (TEXTURE2)
+    RenderWater : - Normal Map binden (TEXTURE3)
+    RenderWater : - Wasser Uniforms setzen (Reflektivität, Fresnel, etc.)
+    RenderWater : - Dudv Offset für Animation berechnen
+    RenderWater : - Wasser Ebenen Dreiecke zeichnen
+  }
+
+  UpdateState --> RenderRefraction
+  RenderRefraction --> RenderReflection
+  RenderReflection --> RenderMain
+  RenderMain --> RenderWater
+  RenderWater --> UpdateState : Nächster Frame
+}
+
+[*] --> Init
+Init --> LoadAssets : Erfolgreich
+LoadAssets --> SetupFB : Assets Geladen
+SetupFB --> RenderLoop : FB Bereit
+RenderLoop --> [*] : Fehler/Beenden
+
+note right of RenderWater
+  **Wasser Shader Pipeline:**
+  1. Vertices in Clip Space transformieren
+  2. Dudv Textur für Verzerrung sampeln
+  3. Reflektions/Refraktions Texturen sampeln
+  4. Fresnel Effekt anwenden
+  5. Spiegelung Highlights berechnen
+  6. Reflektion/Refraktion basierend auf Winkel mischen
+  7. Mit Wasser Grundfarbe vermischen
+end note
+
+note left of UpdateState
+  **Echtzeit Updates:**
+  - 60 FPS Render Schleife
+  - WebSocket Status Sync
+  - Maus/Tastatur Eingabe
+  - Kamera Orbit Steuerung
+  - Wasser Eigenschaften Änderungen
+end note
+
+@enduml
