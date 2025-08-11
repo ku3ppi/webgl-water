@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/webgl-water-go/webgl-water/internal/math3d"
+	"github.com/ku3ppi/webgl-water/internal/math3d"
 )
 
 // State represents the complete application state

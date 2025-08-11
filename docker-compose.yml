@@ -14,9 +14,6 @@ services:
       - GO_ENV=development
     volumes:
       - .:/app
-      - ../dudvmap.png:/app/assets/dudvmap.png
-      - ../normalmap.png:/app/assets/normalmap.png
-      - ../stone-texture.png:/app/assets/stone-texture.png
     working_dir: /app
     command: go run ./cmd/server -port 8080 -assets ./assets -static ./web/static
     restart: unless-stopped

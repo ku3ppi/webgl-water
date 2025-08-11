@@ -31,8 +31,8 @@ class WebGLWaterApp {
     };
 
     // Constants
-    this.CANVAS_WIDTH = 800;
-    this.CANVAS_HEIGHT = 600;
+    this.CANVAS_WIDTH = 1200;
+    this.CANVAS_HEIGHT = 800;
     this.WATER_TILE_Y_POS = 0.0;
     this.REFLECTION_TEXTURE_WIDTH = 320;
     this.REFLECTION_TEXTURE_HEIGHT = 180;
@@ -325,8 +325,11 @@ class WebGLWaterApp {
           image,
         );
 
+        // Generate mipmaps for better filtering
+        gl.generateMipmap(gl.TEXTURE_2D);
+
         // Set texture parameters
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
@@ -381,6 +384,8 @@ class WebGLWaterApp {
     );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.COLOR_ATTACHMENT0,
@@ -405,6 +410,8 @@ class WebGLWaterApp {
     );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.framebufferTexture2D(
       gl.FRAMEBUFFER,
       gl.DEPTH_ATTACHMENT,

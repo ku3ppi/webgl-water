@@ -1,4 +1,4 @@
-module github.com/webgl-water-go/webgl-water
+module github.com/ku3ppi/webgl-water
 
 go 1.22
 
